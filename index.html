@@ -232,6 +232,29 @@
   </div>
 </div>
 
+<!-- ECRAN REFLEXION (2 questions ouvertes avant le QCM) -->
+<div class="screen" id="screen-reflexion">
+  <div class="card">
+    <div class="section-icon">&#128173;</div>
+    <div class="section-title">Avant de commencer</div>
+    <p class="section-desc">Deux questions pour mieux vous accompagner pendant le stage. Vos reponses seront transmises au directeur de stage.</p>
+
+    <div class="field-wrap" style="margin-bottom:22px;">
+      <label class="field-label" for="inp-etat-esprit">Dans quel etat d'esprit abordez-vous ce stage aujourd'hui ?</label>
+      <p style="font-size:12.5px;color:#718096;margin:4px 0 8px;">Comment vous sentez-vous, quelles sont vos eventuelles craintes ou difficultes, et qu'est-ce qui pourrait vous preoccuper avant de commencer ?</p>
+      <textarea class="field-input" id="inp-etat-esprit" style="min-height:90px;resize:vertical;width:100%;" placeholder="Votre reponse..."></textarea>
+    </div>
+
+    <div class="field-wrap" style="margin-bottom:24px;">
+      <label class="field-label" for="inp-attentes">Qu'attendez-vous principalement de ce stage ?</label>
+      <p style="font-size:12.5px;color:#718096;margin:4px 0 8px;">Qu'aimeriez-vous apprendre, ameliorer ou reussir, et avec quoi aimeriez-vous repartir a la fin de la formation ?</p>
+      <textarea class="field-input" id="inp-attentes" style="min-height:90px;resize:vertical;width:100%;" placeholder="Votre reponse..."></textarea>
+    </div>
+
+    <button class="btn-start" onclick="validerReflexion()">Commencer le QCM &#9654;</button>
+  </div>
+</div>
+
 <!-- ECRAN QCM -->
 <div class="screen" id="screen-qcm">
   <div class="qcm-meta">
@@ -303,6 +326,7 @@
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 var stagiaire = {nom:'', prenom:'', matricule:'', cs:''};
+var reflexionEtat = '', reflexionAttentes = '';
 var dateDebut = '';
 var current = 0, score = 0, answered = false;
 var userAnswers = [], themeStats = {};
@@ -525,6 +549,14 @@ function validerIdentite() {
   err.classList.remove('visible');
   stagiaire = {nom:nom.toUpperCase(), prenom:prenom, matricule:mat, cs:cs||'Non renseigne'};
   document.getElementById('screen-identity').classList.remove('active');
+  document.getElementById('screen-reflexion').classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function validerReflexion() {
+  reflexionEtat = document.getElementById('inp-etat-esprit').value.trim();
+  reflexionAttentes = document.getElementById('inp-attentes').value.trim();
+  document.getElementById('screen-reflexion').classList.remove('active');
   demarrerQCM();
 }
 
@@ -645,7 +677,7 @@ function afficherResultats(){
 // Suivre le guide de configuration inclus (fichier GUIDE_google_sheets.md)
 // Laisse cette valeur telle quelle si tu ne veux pas activer l'envoi automatique.
 // ══════════════════════════════════════════════════════
-var SHEETS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbys6oY0mEcIIoJaovQ5F2L8iVFYS6VNX0I7VHb9Dgz17nlLz_7mYgtWYi_M9LcX7vz2rA/exec';
+var SHEETS_WEBAPP_URL = 'REMPLACER_PAR_URL_APPS_SCRIPT';
 // ══════════════════════════════════════════════════════
 
 function envoyerVersGoogleSheets(){
@@ -678,6 +710,8 @@ function envoyerVersGoogleSheets(){
   params.append('niveau', niveau);
   params.append('themes', JSON.stringify(themesArr));
   params.append('commentaire', comment3);
+  params.append('etat_esprit', reflexionEtat || '');
+  params.append('attentes', reflexionAttentes || '');
 
   // mode 'no-cors' : envoi "fire-and-forget", on ne peut pas lire la reponse mais ca fonctionne
   // avec les Web Apps Google Apps Script sans configuration CORS supplementaire.
@@ -734,7 +768,9 @@ function envoyerMail() {
     pourcentage: pct + '%',
     niveau:      niveau,
     themes:      themesTexte,
-    commentaire: comment2
+    commentaire: comment2,
+    etat_esprit: reflexionEtat || 'Non renseigne',
+    attentes:    reflexionAttentes || 'Non renseigne'
   };
 
   // Afficher etat chargement
@@ -748,7 +784,7 @@ function envoyerMail() {
   if (EMAILJS_PUBLIC_KEY === 'VOTRE_PUBLIC_KEY') {
     // Mode fallback : mailto si EmailJS non configure
     statusBox.className = 'mail-status-box error';
-    statusBox.innerHTML = '&#9888; EmailJS non configure. <a href="mailto:vieon@sdis18.fr?subject='+encodeURIComponent(templateParams.sujet)+'&body='+encodeURIComponent('Stagiaire : '+stagiaire.prenom+' '+stagiaire.nom+'\nMatricule : '+stagiaire.matricule+'\nCentre : '+stagiaire.cs+'\nDate : '+dateDebut+'\nScore : '+score+'/'+Q.length+' ('+pct+'%)\nNiveau : '+niveau+'\n\nThemes :\n'+themesTexte+'\nCommentaire :\n'+comment2)+'" style="color:var(--rouge);font-weight:700;">Cliquez ici pour envoyer manuellement</a>';
+    statusBox.innerHTML = '&#9888; EmailJS non configure. <a href="mailto:vieon@sdis18.fr?subject='+encodeURIComponent(templateParams.sujet)+'&body='+encodeURIComponent('Stagiaire : '+stagiaire.prenom+' '+stagiaire.nom+'\nMatricule : '+stagiaire.matricule+'\nCentre : '+stagiaire.cs+'\nDate : '+dateDebut+'\nScore : '+score+'/'+Q.length+' ('+pct+'%)\nNiveau : '+niveau+'\n\nEtat d\'esprit :\n'+(reflexionEtat||'Non renseigne')+'\n\nAttentes :\n'+(reflexionAttentes||'Non renseigne')+'\n\nThemes :\n'+themesTexte+'\nCommentaire :\n'+comment2)+'" style="color:var(--rouge);font-weight:700;">Cliquez ici pour envoyer manuellement</a>';
     btn.disabled = false;
     btn.textContent = 'Envoyer les resultats au directeur de stage';
     return;
@@ -778,9 +814,13 @@ function nouveauStagiaire(){
   ['inp-nom','inp-prenom','inp-matricule','inp-cs'].forEach(function(id){
     var el=document.getElementById(id); el.value=''; el.classList.remove('error');
   });
+  document.getElementById('inp-etat-esprit').value='';
+  document.getElementById('inp-attentes').value='';
+  reflexionEtat=''; reflexionAttentes='';
   document.getElementById('errMsg').classList.remove('visible');
   document.getElementById('progressBar').style.width='0%';
   document.getElementById('screen-qcm').classList.remove('active');
+  document.getElementById('screen-reflexion').classList.remove('active');
   document.getElementById('screen-identity').classList.add('active');
   arreterTimer();
 }
